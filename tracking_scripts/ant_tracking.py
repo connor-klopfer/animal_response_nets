@@ -25,7 +25,7 @@ FILENAME = "colony020_pathogen_PreTreatment.csv"
 
 # pre-analysis just to figure out how many ants at how many time points we have.
 nrows = 0
-with open(FILENAME, 'r') as f:
+with open(FOLDER+FILENAME, 'r') as f:
     csvr = csv.reader(f)
     for line in csvr:
         nants = int( line[3] )
@@ -38,7 +38,7 @@ ants = np.zeros( (nrows,5), dtype=int )
 #ants = []
 
 rownum = 0
-with open('colony020_pathogen_PreTreatment.csv', 'r') as f:
+with open(FOLDER+FILENAME, 'r') as f:
     csvr = csv.reader(f)
     for j,line in enumerate(csvr):
 #        unix = float( line[0] )
@@ -59,3 +59,18 @@ with open('colony020_pathogen_PreTreatment.csv', 'r') as f:
 #
 
 df = pandas.DataFrame(data=ants, columns=['t','id','x','y','theta'])
+
+if False:
+    def plot_ants(dfin,t,ax=None):
+        if ax is not None:
+            fig,ax = pyplot.subplots(1,1)
+        
+        
+        
+        x,y = dfs['x'].values, dfs['y'].values
+        u,v = np.cos(np.pi/180*dfs['theta'].values), np.sin(np.pi/180*dfs['theta'].values)
+        colors = [ant_cmap[ai] for ai in dfs['id'].values]
+        ant_ids = dfs['id'].values
+        
+        ax.cla()
+        ax.quiver( x,y,u,v , color=colors)
