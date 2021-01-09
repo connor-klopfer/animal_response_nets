@@ -1,0 +1,11 @@
+colony,condition,notes
+2a,control,
+2b,exclusion,
+3,control,
+4,exclusion,"exclusion did not work, exclude from analysis"
+6,control,
+7,exclusion,
+8,control,
+9,control,
+10,exclusion,
+12,exclusion,
