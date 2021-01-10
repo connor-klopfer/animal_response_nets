@@ -97,4 +97,5 @@ def append_guppy_ind_attr(all_networks):
 
 if __name__ == "__main__":
     # import_individual_data()
-    import_assoc_networks()
+    # import_assoc_networks()
+    import_assoc_networks_w_attrs()
