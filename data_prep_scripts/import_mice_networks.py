@@ -46,7 +46,7 @@ def get_mice_networks():
             
             # For all the components in that condition.
             for c in condition_subset['component_num'].unique():
-                # Subset down to an edglist for that component
+                # Subset down to an edgelist for that component
                 component_subset = condition_subset.loc[
                     condition_subset['component_num'] == c].drop(
                         ['treatment', 'timepoint', 'component_num'], axis = 1)
@@ -56,7 +56,9 @@ def get_mice_networks():
                 source= "first_mouse", target="second_mouse", edge_attr=True))
     
     print_partitioned_list(all_nets)
+    return all_nets
     
 
 if __name__ == "__main__":
-    get_mice_networks()
+    blarg = get_mice_networks()
+    
