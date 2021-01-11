@@ -4,7 +4,7 @@ Taking the association networks from the guppy data and saving to a friendlier f
 import os
 import csv
 
-def import_raw_association_networks(directory):
+def reformat_raw_association_networks(directory):
     """Import the raw association matrices from the original file 
     on the repository. The current file is not very easy to import. 
 
@@ -104,17 +104,20 @@ def archive_edgelist(networks):
         dictionary, which then has a 'high_risk' and 'low_risk' key, which maps to a list 
         of lists, which represents the edgelist. 
     """
-    # For each group. 
-    for e in networks:
-        # For high and low risk
-        for risk_group in networks[e]:
-            filename = os.path.join("data", "guppies", "reformatted_networks", "group_{}_{}_group.csv".format(e, risk_group))
-            with open(filename, 'w', newline="\n") as fout:
-                net_tofile = csv.writer(fout, delimiter = ",")
-                # Header for file
-                net_tofile.writerow(['guppy1', "guppy2", 'weight']) 
-                # Edgelist to file. 
-                net_tofile.writerows(networks[e][risk_group])
+    filename = os.path.join("data", "guppies", "reformatted_guppy_networks.csv")
+    with open(filename, 'w', newline="\n") as fout:
+        net_tofile = csv.writer(fout, delimiter = ",")
+        net_tofile.writerow(['guppy1', "guppy2", 'weight', 'group', 'risk']) 
+        
+        # For each group. 
+        for e in networks:
+            # For high and low risk
+            for risk_group in networks[e]:
+                    # Header for file
+                    # Edgelist to file. 
+                    for r in networks[e][risk_group]:
+                        net_tofile.writerow([*r, e, risk_group])
+                    # net_tofile.writerows(networks[e][risk_group])
 
 if __name__ == "__main__":
-    import_raw_association_networks(os.path.join("data", "guppies"))
+    reformat_raw_association_networks(os.path.join("data", "guppies"))
