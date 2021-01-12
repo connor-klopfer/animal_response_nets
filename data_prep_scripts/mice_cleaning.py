@@ -22,7 +22,8 @@ def networks_by_date():
         encounters_subset = encounters.loc[encounters['date_obs'] == date]
         all_nets[date] = nx.from_pandas_edgelist(encounters_subset,
             source = "IDA[inside_first]", 
-            target = "IDB[inside_after_IDA]", edge_attr=True)
+            target = "IDB[inside_after_IDA]", edge_attr=True, 
+            create_using=nx.DiGraph)
     return all_nets
 
 def get_date_levels(df, date_col):
@@ -100,7 +101,7 @@ def print_partitioned_list(partition_list):
 def get_network_subgraphs(parent_networks):
     sub_graphs = {}
     for net_date, net in parent_networks.items():
-        sub_graphs[net_date] = [net.subgraph(c).copy() for c in nx.connected_components(net)]
+        sub_graphs[net_date] = [net.subgraph(c).copy() for c in nx.strongly_connected_components(net)]
     return sub_graphs
 
 def write_partitions_to_file(partitioned_networks):
