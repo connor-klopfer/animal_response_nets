@@ -58,6 +58,7 @@ def partition_network_components():
     
     subgraphs = get_network_subgraphs(net_list)
     for date in injection_dates:
+        
         previous_date = sample_dates[sample_dates.index(date) - 1]
         injection_subset = injections.loc[injections['date_injected'] == date]
         for _, mouse in injection_subset.iterrows():
@@ -66,10 +67,14 @@ def partition_network_components():
             
             if injected_mouse_net is None or before_injection_mouse_net is None:
                 continue
+            
+            if len(injected_mouse_net.nodes()) < 10 or len(before_injection_mouse_net.nodes()) < 10:
+                continue
 
             # Append to the injection lists 
             partitioned_nets[mouse['injection']]['after'].append(injected_mouse_net)
             partitioned_nets[mouse['injection']]['before'].append(before_injection_mouse_net) 
+        
         # partition remaining mice for the rest of the networks. 
         for net in subgraphs[date]:
             if len(net.nodes()) >= 10:
@@ -96,7 +101,11 @@ def print_partitioned_list(partition_list):
     for treatment in partition_list:
         for time in partition_list[treatment]:
             print("Treatment {}:Time {}: N items: {}".format(treatment, time, len(partition_list[treatment][time])))
- 
+            for idx, n in enumerate(partition_list[treatment][time]):
+                print("{}: | N Edges: {} | N Nodes: {}: | N Intersection of Nodes: {}".format(
+                    idx, len(n.edges()), len(n.nodes()), 
+                    len(set(n.nodes()).intersection(set(partition_list[treatment]['before' if time == 'after' else 'after'][idx].nodes())))))
+    
 
 def get_network_subgraphs(parent_networks):
     sub_graphs = {}

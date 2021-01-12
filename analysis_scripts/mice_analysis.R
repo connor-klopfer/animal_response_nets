@@ -6,40 +6,27 @@
 
 # Import the mice networks. 
 source("data_prep_scripts/import_mice_networks.R", echo = FALSE)
-source("analysis_scripts/general_analysis.R", echo = FALSE)
 
-mice_net_analysis <- function(m_df){
-  #' Create a dataframe with the network metrics. This data set will have the
-  #' following columns:
-  #' 
-  #'  treatement: 
-  #'  timepoint: 
-  #'  network number 
-  #'  population: 
-  #'  average degree: 
-  #'  clustering coefficient:
-  #'  eigenvalue centrality: Pernode 
-  #'       may need to be
-  #'      
+mice_net_analysis <- function(){
+  #' Iterate through the list of lists in to form analysis on the mice networks. 
+  m_df <- import_mice_networks()
+  
   master_list <- list()
   master_idx <- 1
   for(tr in names(m_df)){
     for(tp in names(m_df[[tr]])){
       for(n in 1:length(m_df[[tr]][[tp]])){
         temp_net <- m_df[[tr]][[tp]][[n]]
-        
-        # NOTE: Temp fix for analysis, need to see whay these are being imported 
-        # as null. 
-        if(is.null(temp_net)){
-          next()
-        }
+
         # Metadata
-        master_list[[master_idx]] <- c(
+        temp_list <- c(
           "network" = paste0("mouse_", tr),
           "animal" = "mouse",
           "condition" = tp,
           "replicate_num" = n
           )
+        temp_list <- get_graph_metrics(temp_net, temp_list)
+        master_list[[master_idx]] <- temp_list
         master_idx <- master_idx + 1
       }
     }
@@ -48,6 +35,3 @@ mice_net_analysis <- function(m_df){
   final <- data.frame(do.call(rbind, master_list))
   return(final)
 }
-
-# Dataframe of the mice analysis results. 
-results_df <- get_mice_metrics(all_mice_nets)

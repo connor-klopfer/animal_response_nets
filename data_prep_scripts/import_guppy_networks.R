@@ -5,9 +5,6 @@
 #'   goes to a list of high risk networks and low risk groups, where the matching 
 #'   experiement groups are matched by index in the list. 
 
-library(dplyr)
-library(igraph)
-
 import_guppy_networks <- function(){
   
   filepath <- file.path("data", "guppies", "reformatted_guppy_networks.csv")
@@ -18,13 +15,10 @@ import_guppy_networks <- function(){
     all_nets[[r]] <- vector(mode = "list", length = 16)
     for(g in unique(guppy_edges$group)){
       all_nets[[r]][[g]] <- guppy_edges %>% 
-        filter(risk == r, group == g) %>% 
+        filter(risk == r, group == g, weight > 0) %>% 
         graph_from_data_frame()
     }
   }
-  
   return(all_nets)
 
 }
-
-all_guppy_nets <- import_guppy_networks()

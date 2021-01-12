@@ -5,8 +5,6 @@
 #' Imports network into a list of igraph networks. The structure is similar to 
 #' the structurr outlined in 'import_mice_networks.py' but with a list in place 
 #' if a python dictionary.  
-library(dplyr)
-library(igraph)
 
 import_mice_networks <- function(){
   raw_mice_data <- readr::read_csv(
@@ -36,6 +34,7 @@ import_mice_networks <- function(){
       
       # For all the components within that condition
       for(c in unique(condition_subset$component_num)){
+        
         # Make the graph of the component from the dataframe subset
         all_nets[[tr]][[tp]][[c + 1]] <- condition_subset %>% 
           filter(component_num == c) %>% 
@@ -47,5 +46,3 @@ import_mice_networks <- function(){
   
   return(all_nets)
 }
-
-all_mice_nets <- import_mice_networks()
