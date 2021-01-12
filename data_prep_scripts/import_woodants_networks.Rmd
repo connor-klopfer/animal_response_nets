@@ -1,0 +1,226 @@
+---
+title: "import_networks"
+author: "Annemarie van der Marel"
+date: "11/01/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(readr)
+library(dplyr)
+library(igraph)
+library(ggplot2)
+library(einet)
+library(EloRating)
+```
+
+```{r}
+#make matrix function (from dataframe, 1st col with row names)
+matrix.please<-function(x) {
+  m<-as.matrix(x[,-1])
+  rownames(m)<-x[,1]
+  m
+}
+```
+
+
+
+# Import wood ants networks
+Burns et al. 2020
+
+In this folder there are six csv files that have all of the data for the 
+exclusion experiment and previous data not used in the analysis:
+
+1. conditions.csv     - This file has the conditions that each colony belongs to in the experiment
+2. edges.csv          - This file has the edges (trail) data for all maps taken for the
+		    	experiment and previous work on this system including the two nodes
+		    	that the edge connects (undirected), the colony, the date and the
+		    	the strength of each connection
+3. focal_trees.csv-     This file has the focal trees for each colony in the experiment
+4. nest_locations.csv - This file has the locations (x/y) for all the nests in the 
+			experiment
+5. nests.csv	      - This file has the nest data for all maps taken in the experiment 
+			and previous work on this system including the node ID, colony,
+			date and size of nest
+6. trees.csv	      - This file has the tree data for all colonies in the experiment and
+			previous work on the system including the tree ID, colony, species 
+			and locations of the trees
+
+# import data
+```{r wood ants}
+path_in <- "./data/data Burns_ants food removal/"
+path_out <- "./analysis"  # where do we want to save the networks?
+
+conditions <- read_csv("data/data Burns_ants food removal/conditions.csv")
+edges <- readr::read_csv("data/data Burns_ants food removal/edges.csv")
+
+edges<-left_join(edges, conditions)
+
+View(edges)
+head(edges)
+glimpse(edges)
+unique(levels(as.factor(edges$colony)))
+unique(levels(as.factor(edges$condition)))
+unique(levels(as.factor(edges$date)))
+unique(edges$from)
+unique(edges$to)
+```
+Time points: "For this study we mapped each colony at four time points: (a) before we installed the collars, in August 2016; (b) after we installed the collars, in June 2017; (c) late in the season, in August 2017; and (d) after the first overwinter since the collars were installed, in June 2018. Here we use the August 2016 and August 2017 time points to assess changes to colonies and nests."
+
+Are we using the same time points?
+
+
+# number of networks
+- condition (2)
+- period (2)
+- colony (9)
+
+# get data ready
+
+```{r}
+sub_edges<-edges %>% filter(date %in% c("22/08/2016","22/08/2017"))
+sub_edges$period[sub_edges$date=="22/08/2016"]<-"before"
+sub_edges$period[sub_edges$date=="22/08/2017"]<-"after"
+
+colonies <- unique(levels(as.factor(sub_edges$colony)))
+
+sub_edges$id <- paste0(sub_edges$colony, "-", sub_edges$period)
+
+
+```
+
+
+First, try on one network
+```{r}
+# subset on 1 colony
+sub_edges1<-filter(sub_edges, colony=="2b", period=="after")
+
+graph_woodants<-graph_from_data_frame(sub_edges1)
+graph_woodants
+print(graph_woodants)
+plot(graph_woodants)
+
+```
+# loop to get network and network metrics
+```{r}
+
+colony_timepoint<-unique(sub_edges$id)
+
+ all_nets = list()  # empty list for networks
+ 
+ #make empty dataframe to fill
+summary <- data.frame(focal.m=character(), 
+                      #n=numeric(), 
+                      #nodes=numeric(),
+                      density=numeric(), 
+                      between=numeric(),
+                      ec=numeric(), 
+                      ec.value=numeric(),
+                      apl=numeric(),
+                      ei=numeric())
+                      #eff=numeric())
+                                    
+ 
+ 
+  
+ i=1
+
+for (i in 1:length(colony_timepoint)) {
+  # as a check and to know where in the loop we are 
+  focal.m <- colony_timepoint[i]
+  print(focal.m) 
+  
+  # subset the dataframe per combi
+  focal.data <- subset(sub_edges, id==focal.m)
+  head(focal.data)
+  
+  ## convert to network format
+  graph<-graph_from_data_frame(focal.data)
+graph
+  
+ #plot 
+  plot(graph, 
+       edge.width=E(graph)$weight,
+       #vertex.color="grey",
+       vertex.label="",
+       edge.color=alpha("black", 1),
+       vertex.size=20,
+       layout=layout_in_circle,
+       main=focal.m)
+
+  graph <- as.list(g)
+  names(graph) <- focal.m
+  all_nets[[focal.m]] <- graph
+  
+  
+  # number of nodes
+  #nodes<-V(graph)
+  
+  ## individual-level 
+
+# betweenness centrality
+between <- igraph::betweenness(graph, directed = TRUE,
+                                      weights = E(graph)$weight)
+
+# eigenvector centrality
+eigen <- eigen_centrality(graph, directed = TRUE, weights = E(graph)$weight)
+ec <- eigen$vector
+ec.value <- eigen$value
+
+
+# pool individual
+pool_id <- cbind.data.frame(between, 
+                            eigen, ec, ec.value)
+
+
+## group-level 
+
+# density =  number of observed dyads/total possible dyads
+density<-ecount(graph)/(vcount(graph)*(vcount(graph)-1)) #for a directed network
+
+# average path length
+apl <- igraph::mean_distance(graph) #average.path.length(graph.ref.crowd) 
+
+
+# efficiency
+library(einet)
+ei <- effective_information(graph, effectiveness = FALSE)
+#eff <- ei/log2('sample size') # normalized value to control for network size 
+
+
+#Find proportion unknown relationships, a measure of sparseness
+#prunk <- EloRating::prunk(matrix)
+#prunk.pu <- as.numeric(prunk[1])
+#prunk.dyads <- as.numeric(prunk[2])
+
+## pool all data
+pool_metrics<- cbind.data.frame(focal.m,
+                      #n, 
+                      #nodes,
+                      density, 
+                      between,
+                      ec, 
+                      ec.value,
+                      apl,
+                      ei)
+                      #eff
+summary <- rbind(summary, pool_metrics)
+                        
+}
+ 
+all_woodants_networks<-all_nets
+
+head(summary)
+network_output <- summary %>% tibble::rownames_to_column() %>%
+  rename(nodeID=rowname, colony_timepoint=focal.m) %>%
+  mutate(species="wood ants") %>%
+  select(species, colony_timepoint, nodeID, everything())
+
+write.csv(network_output, file = "network_output_woodants.csv")
+ 
+```
+
+
+
+
+
