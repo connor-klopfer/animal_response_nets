@@ -136,7 +136,7 @@ for (i in 1:length(colony_timepoint)) {
   
   ## convert to network format
   graph<-graph_from_data_frame(focal.data)
-graph
+graph 
   
  #plot 
   plot(graph, 
