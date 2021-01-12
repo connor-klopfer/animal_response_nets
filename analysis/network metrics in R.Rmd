@@ -1,0 +1,82 @@
+---
+title: "network metrics in R"
+author: "Annemarie van der Marel"
+date: "11/01/2021"
+output: html_document
+---
+
+Some of the functions for the metrics we discussed. 
+We could finally make a loop to get the metrics for all networks
+
+# load libraries
+```{r setup, include=FALSE}
+library(igraph)
+library(einet)
+library(EloRating)
+```
+
+
+# load data
+```{r}
+
+```
+
+
+# loop to get network metrics
+
+```{r}
+
+# create matrix 
+  
+# network graph
+  graph <- graph_from_adjacency_matrix(mx)
+
+
+## individual-level 
+
+# betweenness centrality
+between <- igraph::betweenness(graph, directed = TRUE,
+                                      weights = E(graph)$weight)
+
+# eigenvector centrality
+eigen <- eigen_centrality(graph, directed = TRUE, weights = E(graph)$weight)
+ec <- eigen$vector
+ec.value <- eigen$value
+
+
+# pool individual
+pool_id <- cbind.data.frame(between, 
+                            eigen, ec, ec.value)
+
+
+## group-level 
+
+# density =  number of observed dyads/total possible dyads
+
+
+# average path length
+apl <- igraph::mean_distance(graph) #average.path.length(graph.ref.crowd) 
+
+ie
+# efficiency
+library(einet)
+ei <- effective_information(graph, effectiveness = FALSE)
+eff <- ei/log2(n) # normalized value to control for network size 
+
+
+#Find proportion unknown relationships, a measure of sparseness
+prunk <- EloRating::prunk(matrix)
+prunk.pu <- as.numeric(prunk[1])
+prunk.dyads <- as.numeric(prunk[2])
+
+
+# pool group
+pool_group <- cbind.data.frame(ec, ec.value,
+                         apl,
+                         ei, eff, 
+                         prunk.pu, prunk.dyads
+                                  )
+
+
+```
+
