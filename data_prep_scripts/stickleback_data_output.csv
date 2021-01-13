@@ -1,0 +1,11 @@
+,Study,Animal,Treatment,GroupID,N_Nodes,Density,Mean_Eigenvector_Centrality,Mean_Betweenness_Centrality,Effective_Information
+1,Stickleback,Stickleback,Pre,1,8,1,0.896073673,0.125,0.066526426
+2,Stickleback,Stickleback,Pre,2,8,1,0.90487574,0.3125,0.069552323
+3,Stickleback,Stickleback,Pre,3,8,1,0.906630766,0.125,0.065313423
+4,Stickleback,Stickleback,Pre,4,8,1,0.879045239,0,0.069298431
+5,Stickleback,Stickleback,Pre,5,8,1,0.917224134,0,0.064894801
+6,Stickleback,Stickleback,Post,1,8,1,0.844739143,2,0.09243561
+7,Stickleback,Stickleback,Post,2,8,1,0.866907546,0.8125,0.073180395
+8,Stickleback,Stickleback,Post,3,8,1,0.905054471,0,0.07070019
+9,Stickleback,Stickleback,Post,4,8,1,0.86463629,0.375,0.074218275
+10,Stickleback,Stickleback,Post,5,8,1,0.897289131,0,0.065790485
