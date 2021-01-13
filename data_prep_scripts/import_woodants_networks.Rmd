@@ -12,6 +12,7 @@ library(igraph)
 library(ggplot2)
 library(einet)
 library(EloRating)
+library(tidyverse)
 ```
 
 ```{r}
@@ -48,11 +49,15 @@ exclusion experiment and previous data not used in the analysis:
 
 # import data
 ```{r wood ants}
-path_in <- "./data/data Burns_ants food removal/"
-path_out <- "./analysis"  # where do we want to save the networks?
+#path_in <- "./data/data Burns_ants food removal/"
+#path_out <- "./analysis"  # where do we want to save the networks?
 
-conditions <- read_csv("data/data Burns_ants food removal/conditions.csv")
-edges <- readr::read_csv("data/data Burns_ants food removal/edges.csv")
+nests<-read_csv("../data/data Burns_ants food removal/nests.csv")
+id_list<-unique(nests$ID)
+
+
+conditions <- read_csv("../data/data Burns_ants food removal/conditions.csv") # ../ will go one folder back
+edges <- readr::read_csv("../data/data Burns_ants food removal/edges.csv")
 
 edges<-left_join(edges, conditions)
 
@@ -70,7 +75,7 @@ Time points: "For this study we mapped each colony at four time points: (a) befo
 Are we using the same time points?
 
 
-# number of networks
+# number of networks (undirected)
 - condition (2)
 - period (2)
 - colony (9)
@@ -103,22 +108,20 @@ plot(graph_woodants)
 ```
 # loop to get network and network metrics
 ```{r}
-
 colony_timepoint<-unique(sub_edges$id)
 
  all_nets = list()  # empty list for networks
  
  #make empty dataframe to fill
 summary <- data.frame(focal.m=character(), 
-                      #n=numeric(), 
-                      #nodes=numeric(),
+                      n_nodes=numeric(), 
                       density=numeric(), 
-                      between=numeric(),
-                      ec=numeric(), 
-                      ec.value=numeric(),
-                      apl=numeric(),
-                      ei=numeric())
-                      #eff=numeric())
+                      eigenvector_centrality=numeric(),
+                      betweenness_centrality=numeric(),
+                      normal_ei=numeric())
+                     #apl=numeric(),
+                     #ei=numeric())
+                     #)
                                     
  
  
@@ -148,24 +151,25 @@ graph
        layout=layout_in_circle,
        main=focal.m)
 
-  graph <- as.list(g)
+  graph <- as.list(graph)
   names(graph) <- focal.m
   all_nets[[focal.m]] <- graph
   
   
   # number of nodes
-  #nodes<-V(graph)
+  n_nodes <- length(V(graph))
   
   ## individual-level 
 
 # betweenness centrality
-between <- igraph::betweenness(graph, directed = TRUE,
-                                      weights = E(graph)$weight)
+betweenness_centrality <- mean(igraph::betweenness(graph, directed = F,
+                                      weights = E(graph)$weight))
 
 # eigenvector centrality
-eigen <- eigen_centrality(graph, directed = TRUE, weights = E(graph)$weight)
+eigen <- eigen_centrality(graph, directed = F, weights = E(graph)$weight)
 ec <- eigen$vector
 ec.value <- eigen$value
+eigenvector_centrality<-mean(igraph::eigen_centrality(graph, directed = F)$vector)
 
 
 # pool individual
@@ -177,6 +181,7 @@ pool_id <- cbind.data.frame(between,
 
 # density =  number of observed dyads/total possible dyads
 density<-ecount(graph)/(vcount(graph)*(vcount(graph)-1)) #for a directed network
+ #igraph::edge_density(g)
 
 # average path length
 apl <- igraph::mean_distance(graph) #average.path.length(graph.ref.crowd) 
@@ -185,7 +190,7 @@ apl <- igraph::mean_distance(graph) #average.path.length(graph.ref.crowd)
 # efficiency
 library(einet)
 ei <- effective_information(graph, effectiveness = FALSE)
-#eff <- ei/log2('sample size') # normalized value to control for network size 
+normal_ei <- ei/log2(n_nodes) # normalized value to control for network size
 
 
 #Find proportion unknown relationships, a measure of sparseness
@@ -196,25 +201,34 @@ ei <- effective_information(graph, effectiveness = FALSE)
 ## pool all data
 pool_metrics<- cbind.data.frame(focal.m,
                       #n, 
-                      #nodes,
+                      n_nodes,
                       density, 
-                      between,
-                      ec, 
-                      ec.value,
-                      apl,
-                      ei)
-                      #eff
+                      eigenvector_centrality, 
+                      betweenness_centrality,
+                      #ec.value,
+                      #apl,
+                      normal_ei)
+
 summary <- rbind(summary, pool_metrics)
                         
 }
  
 all_woodants_networks<-all_nets
 
+
+```
+
+
+```{r}
+# compile output and save 
 head(summary)
-network_output <- summary %>% tibble::rownames_to_column() %>%
-  rename(nodeID=rowname, colony_timepoint=focal.m) %>%
-  mutate(species="wood ants") %>%
-  select(species, colony_timepoint, nodeID, everything())
+
+network_output <- summary %>% 
+  #tibble::rownames_to_column() %>% rename(nodeID=rowname)
+  separate(focal.m, c("replicate", "treatment")) %>%
+  mutate(study="burnsetal2020", species="wood ants") %>%
+  select(study, species, treatment, replicate, everything())
+head(network_output)
 
 write.csv(network_output, file = "network_output_woodants.csv")
  
