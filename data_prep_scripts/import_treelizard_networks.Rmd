@@ -1,0 +1,256 @@
+---
+title: "import_networks"
+author: "Annemarie van der Marel"
+date: "11/01/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(readr)
+library(dplyr)
+library(igraph)
+library(ggplot2)
+library(einet)
+library(EloRating)
+```
+
+```{r}
+#make matrix function (from dataframe, 1st col with row names)
+matrix.please<-function(x) {
+  m<-as.matrix(x[,-1])
+  rownames(m)<-x[,1]
+  m
+}
+```
+
+
+
+# Import tree lizards networks
+Lattanzio & Miles 2014
+
+It's not a before and after a perturbation. Instead, spatial networks are compared between different sites differing in the frequency of a disturbance. 
+We could use the non-burned site as control (before treatment) and high burn site as after treatment.  
+
+ 'morph_networks'
+Contains data for morphology, body condition (svl), parasite load, bite mark, perch use frequency, network construction (lat, long data) and analysis (degree, eigenvector centrality data), and morph frequency analyses. 
+
+    'lat' and 'long' used to estimate spatial network at each site. 
+      Connections (edges) in networks represent geographic distances (measured       to nearest01 m) between all lizards captured at each site (nodes, n ≥       28per site). Geographic distances were calculated from the latitude and        longitude data using the program GEOGRAPHIC DISTANCE MATRIX       
+      GENERATORversion 1.2.3 (Ersts 2013).
+    'mite_narea' = total number of distinct body regions with mites
+    'mite_load' = mite rank abundance scaled 0–6(rank in parenthesis): no    
+    mites (0), 1–5 mites (1), 6–10 mites (2),11–15 mites (3), 16–20 mites (4),     21–25 mites (5) and >25 mites(6)
+
+ 'contests'
+Contains data for multivariate analysis of variance of male social contest behaviors. 
+
+ 'strength_data'
+contains data for analysis of strength and mean strength of edges in each sites' spatial network. 
+
+ 'NBdiet' - 'HBdiet'
+Each contain site-specific diet (trophic position) and microhabitat use (perch type) data for analyses comparing tree lizard colour morph differences in ecology. 
+  'trt' = treatment (burn frequency)
+  'gps' = lizard territory location/id
+  'svl' = body size
+  'tcol' = color morph (blue, orange, yellow)
+  'perch' = microhabitat use either trees or snags
+  'tpos' = trophic position
+
+  NBdiet = non-burned site
+  LBdiet = low-frequency burn site
+  HBdiet = high-frequency burn site
+
+
+# import data
+```{r wood ants}
+path_in <- "./data/LattanzioMiles_tree lizards/"
+path_out <- "./analysis"  # where do we want to save the networks?
+
+
+library(readxl)
+morph_networks <- read_excel("data/LattanzioMiles_tree lizards/LattanzioMilesJAEdata.xlsx", 
+    sheet = "morph_networks")
+View(morph_networks)
+
+contests <- read_excel("data/LattanzioMiles_tree lizards/LattanzioMilesJAEdata.xlsx", 
+                                sheet = "contests")
+
+strength <- read_excel("data/LattanzioMiles_tree lizards/LattanzioMilesJAEdata.xlsx", 
+                                      sheet = "strength_data")
+
+NBdiet <- read_excel("data/LattanzioMiles_tree lizards/LattanzioMilesJAEdata.xlsx", 
+                                     sheet = "NBdiet")
+
+LBdiet <- read_excel("data/LattanzioMiles_tree lizards/LattanzioMilesJAEdata.xlsx", 
+                                     sheet = "LBdiet")
+
+HBdiet <- read_excel("data/LattanzioMiles_tree lizards/LattanzioMilesJAEdata.xlsx", 
+                                     sheet = "HBdiet")
+
+```
+
+
+
+# number of networks: spatial networks 
+- condition/treatment: burn frequency sites (3)
+- color morphs: blue, orange, yellow (3)
+
+nodes: geographic locations of each lizards (lat, long)
+lizard ids/territory names:
+  'gps' in morph_networks and diets files 
+  'id' in contest file
+
+Connections (edges) in networks represent geographic distances (measured to nearest 0.1 m) between all lizards captured at each site (nodes, n ≥ 28per site)
+
+undirected networks
+
+
+# get data ready
+
+```{r}
+networkdata<- morph_networks %>% select(trt, gps, tcol, lat, long)
+
+
+```
+
+How to get spatial network?
+
+
+First, try on one network
+```{r}
+# subset on 1 colony
+sub<-filter(networkdata, trt=="LB")
+
+
+
+```
+
+
+
+# loop to get network and network metrics
+
+NB! update for this dataset
+
+```{r}
+
+colony_timepoint<-unique(sub_edges$id)
+
+ all_nets = list()  # empty list for networks
+ 
+ #make empty dataframe to fill
+summary <- data.frame(focal.m=character(), 
+                      n_nodes=numeric(), 
+                      density=numeric(), 
+                      between=numeric(),
+                      eigenvector=numeric(),
+                      apl=numeric(),
+                      ei=numeric())
+                      #eff=numeric())
+                                    
+ 
+ 
+  
+ i=1
+
+for (i in 1:length(colony_timepoint)) {
+  # as a check and to know where in the loop we are 
+  focal.m <- colony_timepoint[i]
+  print(focal.m) 
+  
+  # subset the dataframe per combi
+  focal.data <- subset(sub_edges, id==focal.m)
+  head(focal.data)
+  
+  ## convert to network format
+  graph<-graph_from_data_frame(focal.data)
+graph 
+  
+ #plot 
+  plot(graph, 
+       edge.width=E(graph)$weight,
+       #vertex.color="grey",
+       vertex.label="",
+       edge.color=alpha("black", 1),
+       vertex.size=20,
+       layout=layout_in_circle,
+       main=focal.m)
+
+  graph <- as.list(g)
+  names(graph) <- focal.m
+  all_nets[[focal.m]] <- graph
+  
+  
+  # number of nodes
+  n_nodes <- length(V(g))
+  
+  ## individual-level 
+
+# betweenness centrality
+between <- mean(igraph::betweenness(graph, directed = TRUE,
+                                      weights = E(graph)$weight))
+
+# eigenvector centrality
+eigen <- eigen_centrality(graph, directed = TRUE, weights = E(graph)$weight)
+ec <- eigen$vector
+ec.value <- eigen$value
+eigenvector<-mean(igraph::eigen_centrality(graph, directed = T)$vector)
+
+
+# pool individual
+pool_id <- cbind.data.frame(between, 
+                            eigen, ec, ec.value)
+
+
+## group-level 
+
+# density =  number of observed dyads/total possible dyads
+density<-ecount(graph)/(vcount(graph)*(vcount(graph)-1)) #for a directed network
+ #igraph::edge_density(g)
+
+# average path length
+apl <- igraph::mean_distance(graph) #average.path.length(graph.ref.crowd) 
+
+
+# efficiency
+library(einet)
+ei <- effective_information(graph, effectiveness = FALSE)
+#eff <- ei/log2('sample size') # normalized value to control for network size 
+
+
+#Find proportion unknown relationships, a measure of sparseness
+#prunk <- EloRating::prunk(matrix)
+#prunk.pu <- as.numeric(prunk[1])
+#prunk.dyads <- as.numeric(prunk[2])
+
+## pool all data
+pool_metrics<- cbind.data.frame(focal.m,
+                      #n, 
+                      n_nodes,
+                      density, 
+                      between,
+                      eigenvector, 
+                      ec.value,
+                      apl,
+                      ei)
+                      #eff
+summary <- rbind(summary, pool_metrics)
+                        
+}
+ 
+all_woodants_networks<-all_nets
+
+head(summary)
+network_output <- summary %>% 
+  #tibble::rownames_to_column() %>% rename(nodeID=rowname)
+  rename(colony_timepoint=focal.m) %>%
+  mutate(species="tree lizards") %>%
+  select(species, colony_timepoint, everything())
+
+write.csv(network_output, file = "network_output_treelizards.csv")
+ 
+```
+
+
+
+
+
