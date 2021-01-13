@@ -8,7 +8,7 @@ write_bat_edgelist_tofile <- function(hour_list){
   # For every hour
   for(h in 1:length(hour_list)){
     # Write to edgelist
-    temp_edgelist <- igraph::as_data_frame(hour_list[[h]])
+    temp_edgelist <- igraph::as_data_frame(hour_list[[h]], what = "edges")
     temp_edgelist$hour <- h
     all_dfs[[h]] <- temp_edgelist
   }
