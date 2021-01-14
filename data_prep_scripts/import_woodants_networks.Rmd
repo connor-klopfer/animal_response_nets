@@ -161,10 +161,15 @@ graph
   
   ## individual-level 
 
-# betweenness centrality
-betweenness_centrality <- mean(igraph::betweenness(graph, directed = F,
-                                      weights = E(graph)$weight))
-
+# betweenness centrality -> standardized
+  between <- igraph::betweenness(graph, directed = F,
+                                      weights = E(graph)$weight)
+  between_st <- (between-min(between))/(max(between)-min(between))
+  betweenness_centrality <-mean(between_st)
+  
+  # betweenness_centrality <- mean(igraph::betweenness(graph, directed = F, weights = E(graph)$weight))
+  
+  
 # eigenvector centrality
 eigen <- eigen_centrality(graph, directed = F, weights = E(graph)$weight)
 ec <- eigen$vector
