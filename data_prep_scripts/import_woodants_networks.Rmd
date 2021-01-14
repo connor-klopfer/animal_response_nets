@@ -91,6 +91,8 @@ colonies <- unique(levels(as.factor(sub_edges$colony)))
 
 sub_edges$id <- paste0(sub_edges$colony, "-", sub_edges$period)
 
+head(sub_edges)
+glimpse(sub_edges)
 
 ```
 
@@ -113,20 +115,22 @@ colony_timepoint<-unique(sub_edges$id)
  all_nets = list()  # empty list for networks
  
  #make empty dataframe to fill
-summary <- data.frame(focal.m=character(), 
+ 
+ node_summary <- data.frame(focal.m=character(), 
+                      degree=numeric(), 
+                      eigenvector_centrality=numeric(),
+                      betweenness_centrality=numeric())
+ 
+ 
+network_summary <- data.frame(focal.m=character(), 
                       n_nodes=numeric(), 
                       density=numeric(), 
-                      eigenvector_centrality=numeric(),
-                      betweenness_centrality=numeric(),
                       normal_ei=numeric())
                      #apl=numeric(),
                      #ei=numeric())
                      #)
                                     
- 
- 
-  
- i=1
+  i=1
 
 for (i in 1:length(colony_timepoint)) {
   # as a check and to know where in the loop we are 
@@ -138,7 +142,7 @@ for (i in 1:length(colony_timepoint)) {
   head(focal.data)
   
   ## convert to network format
-  graph<-graph_from_data_frame(focal.data)
+  graph<-graph_from_data_frame(focal.data, directed = F)
 graph 
   
  #plot 
@@ -151,71 +155,72 @@ graph
        layout=layout_in_circle,
        main=focal.m)
 
-  graph <- as.list(graph)
-  names(graph) <- focal.m
-  all_nets[[focal.m]] <- graph
-  
-  
-  # number of nodes
-  n_nodes <- length(V(graph))
-  
-  ## individual-level 
 
-# betweenness centrality -> standardized
+#### individual-level : Betweenness Centrality, Eigenvector Centrality, and Degree ###
+
+  # degree
+  degree <- igraph::degree(graph)
+  
+  # betweenness centrality -> standardized
   between <- igraph::betweenness(graph, directed = F,
                                       weights = E(graph)$weight)
-  between_st <- (between-min(between))/(max(between)-min(between))
-  betweenness_centrality <-mean(between_st)
+  betweenness_centrality <- (between-min(between))/(max(between)-min(between))
   
-  # betweenness_centrality <- mean(igraph::betweenness(graph, directed = F, weights = E(graph)$weight))
   
   
 # eigenvector centrality
-eigen <- eigen_centrality(graph, directed = F, weights = E(graph)$weight)
-ec <- eigen$vector
-ec.value <- eigen$value
-eigenvector_centrality<-mean(igraph::eigen_centrality(graph, directed = F)$vector)
+eigenvector_centrality<-igraph::eigen_centrality(graph, directed = F)$vector
 
 
 # pool individual
-pool_id <- cbind.data.frame(between, 
-                            eigen, ec, ec.value)
+pool_id <- cbind.data.frame(focal.m,
+                            degree,
+                            betweenness_centrality, 
+                            eigenvector_centrality)
+
+node_summary <- rbind(node_summary, pool_id)
+                        
 
 
-## group-level 
+#### network level (N Nodes, Density, Effective Information) ####
+
+# number of nodes
+  n_nodes <- length(V(graph))
 
 # density =  number of observed dyads/total possible dyads
-density<-ecount(graph)/(vcount(graph)*(vcount(graph)-1)) #for a directed network
- #igraph::edge_density(g)
+#density<-ecount(graph)/(vcount(graph)*(vcount(graph)-1)) #for a directed network
+density<-igraph::edge_density(graph)
 
 # average path length
 apl <- igraph::mean_distance(graph) #average.path.length(graph.ref.crowd) 
-
 
 # efficiency
 library(einet)
 ei <- effective_information(graph, effectiveness = FALSE)
 normal_ei <- ei/log2(n_nodes) # normalized value to control for network size
 
+# betweenness_centrality <- mean(igraph::betweenness(graph, directed = F, weights = E(graph)$weight))
+  # eigenvector_centrality<-mean(igraph::eigen_centrality(graph, directed = F)$vector)
 
 #Find proportion unknown relationships, a measure of sparseness
 #prunk <- EloRating::prunk(matrix)
 #prunk.pu <- as.numeric(prunk[1])
 #prunk.dyads <- as.numeric(prunk[2])
 
-## pool all data
-pool_metrics<- cbind.data.frame(focal.m,
-                      #n, 
+## pool network data
+pool_network<- cbind.data.frame(focal.m,
                       n_nodes,
                       density, 
-                      eigenvector_centrality, 
-                      betweenness_centrality,
-                      #ec.value,
-                      #apl,
                       normal_ei)
 
-summary <- rbind(summary, pool_metrics)
-                        
+network_summary <- rbind(network_summary, pool_network)
+     
+# pool networks
+  graph <- as.list(graph)
+  names(graph) <- focal.m
+  all_nets[[focal.m]] <- graph
+
+                   
 }
  
 all_woodants_networks<-all_nets
@@ -224,18 +229,42 @@ all_woodants_networks<-all_nets
 ```
 
 
-```{r}
-# compile output and save 
-head(summary)
+```{r save output}
+# compile node output and save 
+head(node_summary)
 
-network_output <- summary %>% 
+node_output <- node_summary %>% 
+  tibble::rownames_to_column() %>% rename(ID=rowname) %>% 
+  separate(focal.m, c("replicate", "treatment")) %>%
+  mutate(study="burnsetal2020", species="wood ants") %>%
+  select(study, species, treatment, replicate, everything())
+head(node_output)
+
+write.csv(node_output, file = "../analysis_results/node_output_woodants.csv")
+
+
+
+# compile network output and save 
+head(network_summary)
+
+network_output <- network_summary %>% 
   #tibble::rownames_to_column() %>% rename(nodeID=rowname)
   separate(focal.m, c("replicate", "treatment")) %>%
   mutate(study="burnsetal2020", species="wood ants") %>%
   select(study, species, treatment, replicate, everything())
 head(network_output)
 
-write.csv(network_output, file = "network_output_woodants.csv")
+write.csv(network_output, file = "../analysis_results/network_output_woodants.csv")
+
+
+# save network edgelist or matrix as csv
+head(sub_edges)
+glimpse(sub_edges)
+
+write.csv(sub_edges, file = "../analysis_results/edgelist_woodants.csv")
+
+
+
  
 ```
 
