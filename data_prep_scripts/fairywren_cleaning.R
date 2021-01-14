@@ -22,4 +22,4 @@ reformat_fairywrens_dataset <- function(original){
   return(final)
 }
 
-reformatted_great_tits <- reformat_fairywrens_dataset(S1Table)
+reformatted_fairywrens <- reformat_fairywrens_dataset(S1Table)
