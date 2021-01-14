@@ -12,6 +12,7 @@ library(igraph)
 library(ggplot2)
 library(einet)
 library(EloRating)
+library(geosphere)
 ```
 
 ```{r}
@@ -68,7 +69,7 @@ path_out <- "./analysis"  # where do we want to save the networks?
 
 
 library(readxl)
-morph_networks <- read_excel("data/LattanzioMiles_tree lizards/LattanzioMilesJAEdata.xlsx", 
+morph_networks <- read_excel("../data/LattanzioMiles_tree lizards/LattanzioMilesJAEdata.xlsx", 
     sheet = "morph_networks")
 View(morph_networks)
 
@@ -101,6 +102,13 @@ lizard ids/territory names:
   'id' in contest file
 
 Connections (edges) in networks represent geographic distances (measured to nearest 0.1 m) between all lizards captured at each site (nodes, n ≥ 28per site)
+  >50 m   edge weight = 0
+  40-50 m             = 1
+  30-40m              = 2
+  20-30m              = 3
+  10-20m              = 4
+  0-10m               = 5
+
 
 undirected networks
 
@@ -108,32 +116,146 @@ undirected networks
 # get data ready
 
 ```{r}
+
+
+```
+
+
+
+get distance between pairs of tree lizards
+```{r}
+
 networkdata<- morph_networks %>% select(trt, gps, tcol, lat, long)
 
+# distance per colony --> could be done with a loop too
+unique(networkdata$trt)
+
+#### NB ####
+NB<-filter(networkdata, trt=="NB") %>% select(gps, long, lat)
+
+CP <- function(NB) {
+            Did = as.data.frame(t(combn(NB$gps, 2)))
+            Z <- merge(Did, NB, by.x = "V2", by.y = "gps")
+            Z <- merge(Z, NB, by.x = "V1", by.y = "gps")
+            return(Z)
+      }                  
+        
+coord_NB<- CP(NB) %>% rename(id1=V1, id2=V2, long1=long.y, lat1=lat.y,
+                                      long2=long.x, lat2=lat.x)
+   
+
+edge_distance_NB<- coord_NB%>%
+  rowwise() %>%
+  mutate(
+         distance = distHaversine(cbind(long1,lat1),cbind(long2,lat2)),
+         weight=if_else(distance>50, 0, 
+                        if_else(distance>40, 1, 
+                                if_else(distance>30, 2,
+                                       if_else(distance>20, 3,
+                                               if_else(distance>10, 4,
+                                                       if_else(distance>0, 5, 5)))))),
+         trt="NB")
+
+edge_distance_NB$weight[edge_distance_NB$distance>50]<-0
+
+
+## convert to network format
+  graph_NB<-graph_from_data_frame(edge_distance_NB, directed = FALSE)
+graph_NB
+  
+edge.attributes(graph_NB)$weight <- edge_distance_NB$weight
+
+ #plot 
+plot(graph_NB)
+
+
+
+#### LB ####
+LB<-filter(networkdata, trt=="LB") %>% select(gps, long, lat)
+
+CP <- function(LB) {
+            Did = as.data.frame(t(combn(LB$gps, 2)))
+            Z <- merge(Did, LB, by.x = "V2", by.y = "gps")
+            Z <- merge(Z, LB, by.x = "V1", by.y = "gps")
+            return(Z)
+      }                  
+        
+coord_LB<- CP(LB) %>% rename(id1=V1, id2=V2, long1=long.y, lat1=lat.y,
+                                      long2=long.x, lat2=lat.x)
+   
+edge_distance_LB<- coord_LB%>%
+  rowwise() %>%
+  mutate(
+         distance = distHaversine(cbind(long1,lat1),cbind(long2,lat2)),
+         weight=if_else(distance>50, 0, 
+                        if_else(distance>40, 1, 
+                                if_else(distance>30, 2,
+                                       if_else(distance>20, 3,
+                                               if_else(distance>10, 4,
+                                                       if_else(distance>0, 5, 5)))))),
+         trt="LB")
+
+edge_distance_LB$weight[edge_distance_LB$distance>50]<-0
+
+
+## convert to network format
+  graph_LB<-graph_from_data_frame(edge_distance_LB, directed = FALSE)
+graph 
+  
+ #plot 
+plot(graph_LB)
+
+
+
+
+#### HB ####
+HB<-filter(networkdata, trt=="HB") %>% select(gps, long, lat)
+
+CP <- function(HB) {
+            Did = as.data.frame(t(combn(HB$gps, 2)))
+            Z <- merge(Did, HB, by.x = "V2", by.y = "gps")
+            Z <- merge(Z, HB, by.x = "V1", by.y = "gps")
+            return(Z)
+      }                  
+        
+coord_HB<- CP(HB) %>% rename(id1=V1, id2=V2, long1=long.y, lat1=lat.y,
+                                      long2=long.x, lat2=lat.x)
+   
+edge_distance_HB<- coord_HB%>%
+  rowwise() %>%
+  mutate(
+    distance = distHaversine(cbind(long1,lat1),cbind(long2,lat2)),
+         weight=if_else(distance>50, 0, 
+                        if_else(distance>40, 1, 
+                                if_else(distance>30, 2,
+                                       if_else(distance>20, 3,
+                                               if_else(distance>10, 4,
+                                                       if_else(distance>0, 5, 5)))))),
+    trt="HB")
+
+edge_distance_HB$weight[edge_distance_HB$distance>50]<-0
+
+
+## convert to network format
+  graph_HB<-graph_from_data_frame(edge_distance_LB, directed = FALSE)
+graph 
+  
+ #plot 
+plot(graph_HB)
+
+
+#### combine datasets
+edge_distance <- bind_rows(edge_distance_NB, edge_distance_LB, edge_distance_HB) %>% select(trt, id1, id2, distance, weight)
+glimpse(edge_distance)
 
 ```
-
-How to get spatial network?
-
-
-First, try on one network
-```{r}
-# subset on 1 colony
-sub<-filter(networkdata, trt=="LB")
-
-
-
-```
-
-
 
 # loop to get network and network metrics
-
-NB! update for this dataset
-
 ```{r}
 
-colony_timepoint<-unique(sub_edges$id)
+head(edge_distance)
+trt<-unique(networkdata$trt)
+
 
  all_nets = list()  # empty list for networks
  
@@ -141,71 +263,66 @@ colony_timepoint<-unique(sub_edges$id)
 summary <- data.frame(focal.m=character(), 
                       n_nodes=numeric(), 
                       density=numeric(), 
-                      between=numeric(),
-                      eigenvector=numeric(),
-                      apl=numeric(),
-                      ei=numeric())
-                      #eff=numeric())
+                      eigenvector_centrality=numeric(),
+                      betweenness_centrality=numeric(),
+                      normal_ei=numeric())
+                     #apl=numeric(),
+                     #ei=numeric())
+                     #)
                                     
- 
- 
-  
- i=1
+  i=1
 
-for (i in 1:length(colony_timepoint)) {
+for (i in 1:length(trt)) {
   # as a check and to know where in the loop we are 
-  focal.m <- colony_timepoint[i]
-  print(focal.m) 
+  focal <- trt[i]
+  print(focal) 
   
   # subset the dataframe per combi
-  focal.data <- subset(sub_edges, id==focal.m)
+  focal.data <- subset(edge_distance, trt==focal)
   head(focal.data)
   
   ## convert to network format
-  graph<-graph_from_data_frame(focal.data)
-graph 
+  graph<-graph_from_data_frame(focal.data, directed = FALSE)
+  graph 
+  
+  edge.attributes(graph)$weight <- focal.data$weight
   
  #plot 
   plot(graph, 
-       edge.width=E(graph)$weight,
+       edge.width=E(graph)$weight*1,
        #vertex.color="grey",
        vertex.label="",
        edge.color=alpha("black", 1),
        vertex.size=20,
        layout=layout_in_circle,
-       main=focal.m)
+       main=focal)
 
-  graph <- as.list(g)
-  names(graph) <- focal.m
-  all_nets[[focal.m]] <- graph
+  graph <- as.list(graph)
+  names(graph) <- focal
+  all_nets[[focal]] <- graph
   
   
   # number of nodes
-  n_nodes <- length(V(g))
+  n_nodes <- length(V(graph))
   
   ## individual-level 
 
 # betweenness centrality
-between <- mean(igraph::betweenness(graph, directed = TRUE,
+betweenness_centrality <- mean(igraph::betweenness(graph, directed = F,
                                       weights = E(graph)$weight))
 
 # eigenvector centrality
-eigen <- eigen_centrality(graph, directed = TRUE, weights = E(graph)$weight)
+eigen <- eigen_centrality(graph, directed = F, weights = E(graph)$weight)
 ec <- eigen$vector
 ec.value <- eigen$value
-eigenvector<-mean(igraph::eigen_centrality(graph, directed = T)$vector)
-
-
-# pool individual
-pool_id <- cbind.data.frame(between, 
-                            eigen, ec, ec.value)
+eigenvector_centrality<-mean(igraph::eigen_centrality(graph, directed = F)$vector)
 
 
 ## group-level 
 
 # density =  number of observed dyads/total possible dyads
-density<-ecount(graph)/(vcount(graph)*(vcount(graph)-1)) #for a directed network
- #igraph::edge_density(g)
+density<-igraph::edge_density(graph)
+#density<-ecount(graph)/(vcount(graph)*(vcount(graph)-1)) #for a directed network
 
 # average path length
 apl <- igraph::mean_distance(graph) #average.path.length(graph.ref.crowd) 
@@ -214,7 +331,7 @@ apl <- igraph::mean_distance(graph) #average.path.length(graph.ref.crowd)
 # efficiency
 library(einet)
 ei <- effective_information(graph, effectiveness = FALSE)
-#eff <- ei/log2('sample size') # normalized value to control for network size 
+normal_ei <- ei/log2(n_nodes) # normalized value to control for network size
 
 
 #Find proportion unknown relationships, a measure of sparseness
@@ -227,30 +344,36 @@ pool_metrics<- cbind.data.frame(focal.m,
                       #n, 
                       n_nodes,
                       density, 
-                      between,
-                      eigenvector, 
-                      ec.value,
-                      apl,
-                      ei)
-                      #eff
+                      eigenvector_centrality, 
+                      betweenness_centrality,
+                      #ec.value,
+                      #apl,
+                      normal_ei)
+
 summary <- rbind(summary, pool_metrics)
                         
 }
  
-all_woodants_networks<-all_nets
+all_treelizards_networks<-all_nets
 
+
+```
+
+
+```{r}
+# compile output and save 
 head(summary)
+
 network_output <- summary %>% 
   #tibble::rownames_to_column() %>% rename(nodeID=rowname)
-  rename(colony_timepoint=focal.m) %>%
-  mutate(species="tree lizards") %>%
-  select(species, colony_timepoint, everything())
+  #separate(focal.m, c("replicate", "treatment")) %>%
+  rename(treatment=trt) %>%
+  mutate(study="LattanzioMiles", species="tree lizards", replicate="") %>%
+  select(study, species, treatment, replicate, everything())
+head(network_output)
 
 write.csv(network_output, file = "network_output_treelizards.csv")
  
 ```
-
-
-
 
 
