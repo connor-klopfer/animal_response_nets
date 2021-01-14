@@ -10,7 +10,7 @@ Analysis of a nested dictionary of NetworkX graphs to measure network metrics:
     1.Average density, Number of nodes, Mean Betweenness Centrality, and Mean Eigenvector Centrality 
     2.Node Degree centrality, Node Eigenvector Centrality, Node Closeness Centrality, and Node Betweenness Centrality
     
-Metrics are compiled into groups (1,2) then exported into a .csv file
+Metrics are compiled into groups (1,2) then exported into two .csv files
 """
 
 
