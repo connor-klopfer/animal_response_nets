@@ -1,0 +1,4 @@
+"","study","species","treatment","replicate","n_nodes","density","normal_ei"
+"1","LattanzioMiles","tree lizards","high burn","",25,0.16,0.629211294984504
+"2","LattanzioMiles","tree lizards","low burn","",23,0.142292490118577,0.720395713353399
+"3","LattanzioMiles","tree lizards","no burn","",31,0.150537634408602,0.633546040635576
