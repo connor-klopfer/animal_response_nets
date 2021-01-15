@@ -1,9 +1,13 @@
 import numpy as np
 import networkx
-from matplotlib import pyplot,rcParams
+from matplotlib import pyplot
+#,rcParams
+#rcParams['axes.titlesize'] = 18
+#rcParams['axes.labelsize'] = 18
 
-rcParams['axes.titlesize'] = 18
-rcParams['axes.labelsize'] = 18
+
+import vis_params  # local parameters file.
+
 
 import chimpanzee_work as cw
 
@@ -39,8 +43,8 @@ for kk,c in enumerate( techniques ):
             eventmask = np.where(eventmask)[0]
             
             edge_sub = cw.df_events.iloc[eventmask,:2].values
-            print(c, d)
-            print(edge_sub)
+#            print(c, d)
+#            print(edge_sub)
             learned = np.unique( np.concatenate( [ learned, edge_sub[:,0] ] ) )
             
             # assign color...
@@ -73,5 +77,5 @@ for kk,c in enumerate( techniques ):
                 ax[kk,ll].set_ylabel(c)
 #
 
-fig.savefig('chimpanzee_bytechnique_byday.png')
+fig.savefig(vis_params.IMAGES_FOLDER + 'chimpanzee_bytechnique_byday.png')
 fig.show()
