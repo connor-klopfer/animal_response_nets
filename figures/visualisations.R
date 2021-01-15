@@ -4,6 +4,22 @@ library(ggplot2)
 source("analysis_scripts/general_analysis.R", echo = F)
 
 
+import_individuals_all <- function(){
+  return(readr::read_csv(file.path("analysis_results", "all_individual_results.csv"), 
+                  col_types = c("cdddcccc")))
+}
+
+all_ind_data <- import_individuals_all()
+
+import_population_all <- function(){
+  return(readr::read_csv(file.path("analysis_results", "all_population_results.csv"), 
+                         col_types = c("ccccdid")))
+}
+
+all_pop_data <- import_population_all()
+
+
+
 fix_timepoints <- function(d_f){
   cond_1 <- c("low_risk", "before", "Pre")
   cond_2 <- c("high_risk", "after", "Post")
@@ -51,6 +67,34 @@ plot_comparison_plots <- function(d_f){
 }
 
 plot_comparison_plots(final_df)
+
+plot_individual_distributions <- function(d_f){
+  p1 <- d_f %>% 
+    fix_timepoints() %>% 
+    ggplot(aes(x = degree, fill = condition)) + 
+    geom_histogram(binwidth = 1)+
+    facet_wrap(.~animal, scale = "free") +
+    labs(title = "Degree Distribution for Individuals in the population") 
+  ggsave(p1, path = "figures", filename = "degree_distribution.png", device = "png")
+    
+  p2 <- d_f %>%
+    fix_timepoints() %>% 
+    ggplot(aes(x = eigenvector_centrality, fill = condition)) +
+    geom_histogram()+
+    facet_wrap(.~animal, scale = "free") +
+    labs(title = "Eigenvector Centrality for Individuals in the population")
+  ggsave(p2, path = "figures", filename = "eigenvector_distribution.png", device = "png")
+    
+  p3 <- d_f %>%
+    fix_timepoints() %>% 
+    ggplot(aes(x = betweeness, fill = condition)) +
+    geom_histogram()+
+    facet_wrap(.~animal, scale = "free") +
+    labs(title = "Betweenness Centrality for Individuals in the population")
+  ggsave(p3, path = "figures", filename = "betweeness_distribution.png", device = "png")
+}
+
+plot_individual_distributions(all_ind_data)
 
 plot_all_change <- function(d_f){
   final_plot <- d_f %>% 

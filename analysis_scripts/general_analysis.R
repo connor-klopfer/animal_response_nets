@@ -104,7 +104,13 @@ run_full_analysis <- function(){
   all_individual_analysis[['mice']] <- mice_ind_analysis()# %>% mutate_all(as.character)
   all_population_analysis[["mice"]] <- mice_pop_analysis()# %>% mutate_all(as.character)
   
-  all_individual_analysis[["bats"]] <- import_analysis_results("bats_node_metrics.csv") %>% select(-`Network ID`, -exp_treatment)
+  all_individual_analysis[["bats"]] <- import_analysis_results("bats_node_metrics.csv") %>% 
+    select(-`Network ID`, -exp_treatment) %>% group_by(condition, replicate_num) %>%
+    mutate(betweeness = as.numeric(betweeness)) %>% 
+    mutate(betweeness = (betweeness - min(betweeness))/(max(betweeness) - min(betweeness))) %>% 
+    ungroup() %>% mutate(betweeness = as.character(betweeness))
+  
+  
   all_population_analysis[["bats"]] <- import_analysis_results("bats_network_metrics.csv")
   
   all_population_analysis[['tree_lizards']] <- import_analysis_results("network_output_treelizards_0weightexcl.csv") %>%
@@ -126,7 +132,13 @@ run_full_analysis <- function(){
     select(-X1)
   all_individual_analysis[['great_tits']] <- import_analysis_results("tits_2015_individual_metrics.csv") %>%
     select(-X1, -network_id)
+  
+  all_population_analysis[['fairy_wrens']] <- import_analysis_results("fairywren_2013_2014_pre_post_population.csv") 
+  all_individual_analysis[['fairy_wrens']] <- import_analysis_results("fairywren_2013_2014_pre_post_individual.csv")
+  
+  
   View(all_individual_analysis)
+  View(all_population_analysis)
 
   # print(names(append_beetle_ind_analysis()))
   do.call(rbind, all_individual_analysis) %>% 
@@ -173,15 +185,15 @@ get_processed_results <- function(){
 normalise_names <- function(d_f){
   #' Normalise names for a given dataset. 
   names_dict <- list(
-    'network' = c("Study", "study"), 
+    'network' = c("Study", "study", "Network/Study"), 
     'animal' = c("Animal", "species"), 
     'condition' = c('Treatment', "treatment", "Condition"), 
-    'replicate_num' = c("GroupID", "replicate", "Replicate #", "replicate_number"), 
+    'replicate_num' = c("GroupID", "replicate", "Replicate #", "replicate_number", "Year"), 
     'n_nodes' = c("N_Nodes", "n_nodes", "N Nodes"),
     'density' = c("Density"), 
     'eigenvector_centrality' = c('Mean_Eigenvector_Centrality',  "Eignvector Centrality", 
-                                 "EigenvectorCentrality"), 
-    'betweeness' = c("Mean_Betweenness_Centrality", "Betweenness Centrality", "betweenness", 
+                                 "EigenvectorCentrality", "Eigenvector_Centrality"), 
+    'betweeness' = c("Mean_Betweenness_Centrality", "Betweenness Centrality", "betweenness", "Betweenness", 
                                  "betweeness", "betweenness_centrality", "betweenness_centrality", 
                      "BetweennessCentrality"),
     "effective_information" = c("Effective_Information", "normal_ei", "Effective Information"),

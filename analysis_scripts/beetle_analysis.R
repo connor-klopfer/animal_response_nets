@@ -29,9 +29,11 @@ append_beetle_population_analysis <- function(){
       next()
     }
     for(tp in unique(beetles$condition)){
+      print(paste0("Effective INfor: ", einet::effective_information(beetle_nets[[c]][[tp]])))
       beetles$effective_information[which((beetles$replicate_num == c) & 
                                             beetles$condition == tp)] <- as.character(
-                                              einet::effective_information(beetle_nets[[c]][[tp]]))
+                                              einet::effective_information(beetle_nets[[c]][[tp]])/
+                                                log2(as.numeric(length(V(beetle_nets[[c]][[tp]])))))
     }
   }
   return(beetles %>% 
