@@ -91,17 +91,41 @@ run_full_analysis <- function(){
   # all_analysis[['guppy']] <- guppy_net_analysis()
   # all_analysis[['mice']] <- mice_net_analysis()
   
-  all_individual_analysis[['guppy']] <- guppy_ind_analysis()
-  all_population_analysis[['guppy']] <- guppy_pop_analysis()
+  all_individual_analysis[['guppy']] <- guppy_ind_analysis()# %>% mutate_all(as.character)
+  all_population_analysis[['guppy']] <- guppy_pop_analysis()# %>% mutate_all(as.character)
   
-  all_individual_analysis[['mice']] <- mice_ind_analysis()
-  all_population_analysis[["mice"]] <- mice_pop_analysis()
+  all_individual_analysis[['mice']] <- mice_ind_analysis()# %>% mutate_all(as.character)
+  all_population_analysis[["mice"]] <- mice_pop_analysis()# %>% mutate_all(as.character)
   
-  do.call(rbind, all_individual_analysis) %>% 
-    write.csv(file.path('analysis_results', "all_individual_results.csv"), 
+  all_individual_analysis[["bats"]] <- import_analysis_results("bats_node_metrics.csv") %>% select(-`Network ID`, -exp_treatment)
+  all_population_analysis[["bats"]] <- import_analysis_results("bats_network_metrics.csv")
+  
+  all_population_analysis[['tree_lizards']] <- import_analysis_results("network_output_treelizards_0weightexcl.csv") %>%
+    select(-X1)
+  all_individual_analysis[['tree_lizards']] <- import_analysis_results("node_output_treelizards_0weightexcl.csv") %>% 
+    select(-X1)
+  
+  all_population_analysis[['wood_ants']] <- import_analysis_results("network_output_woodants.csv") %>%
+    select(-X1)
+  all_individual_analysis[['wood_ants']] <- import_analysis_results("node_output_woodants.csv") %>% 
+    select(-X1)
+  
+  all_population_analysis[['stickleback']] <- import_analysis_results("stickleback_networkdata.csv") %>%
+    select(-X1)
+  all_individual_analysis[['stickleback']] <- import_analysis_results("stickleback_individualdata.csv") %>% 
+    select(-X1, -NetworkID)
+  
+  
+  View(all_individual_analysis)
+  View(all_population_analysis)
+  
+  do.call(rbind, all_individual_analysis) %>%
+    # bind_rows(append_beetle_population_analysis()) %>%
+    write.csv(file.path('analysis_results', "all_individual_results.csv"),
               row.names = F)
 
   do.call(rbind, all_population_analysis) %>% 
+    # bind_rows(append_beetle_population_analysis()) %>%
     write.csv(file.path('analysis_results', "all_population_results.csv"), 
               row.names = F)
   
@@ -119,6 +143,10 @@ get_processed_results <- function(){
   
   results_filename <- list.files(path = parent_dir, pattern = ".csv")
   
+  results_filename <- c(
+    
+  )
+
   # FOr every CSV file in analysis scripts/
   for(r in 1:length(results_filename)){
     # Filepath
@@ -131,29 +159,24 @@ get_processed_results <- function(){
   return(do.call(rbind, all_result_dfs))
 }
 
-append_beetle_analysis <- function(){
-  beetles <- readr::read_csv(file.path("analysis_results", "mean_measures_beetles.csv"))
-  names(beetles) <- c("replicate_num", "condition", "n_nodes", "eigenvector_centrality", 
-                      "betweenness_centrality")
-  beetles$network <- "guppy"
-  beetles$animal <- "beetle"
-  return(beetles)
-}
-
-append_beetle_analysis()
-
 normalise_names <- function(d_f){
   #' Normalise names for a given dataset. 
   names_dict <- list(
     'network' = c("Study", "study"), 
     'animal' = c("Animal", "species"), 
-    'condition' = c('Treatment', "treatment"), 
-    'replicate_num' = c("GroupID", "replicate"), 
-    'n_nodes' = c("N_Nodes", "n_nodes"),
+    'condition' = c('Treatment', "treatment", "Condition"), 
+    'replicate_num' = c("GroupID", "replicate", "Replicate #"), 
+    'n_nodes' = c("N_Nodes", "n_nodes", "N Nodes"),
     'density' = c("Density"), 
-    'eigenvector_centrality' = c('Mean_Eigenvector_Centrality'), 
-    'betweenness_centrality' = c("Mean_Betweenness_Centrality"),
-    "effective_information" = c("Effective_Information", "normal_ei")
+    'eigenvector_centrality' = c('Mean_Eigenvector_Centrality',  "Eignvector Centrality", 
+                                 "EigenvectorCentrality"), 
+    'betweeness' = c("Mean_Betweenness_Centrality", "Betweenness Centrality", "betweenness", 
+                                 "betweeness", "betweenness_centrality", "betweenness_centrality", 
+                     "BetweennessCentrality"),
+    "effective_information" = c("Effective_Information", "normal_ei", "Effective Information"),
+    "degree" = c("Degree"),
+    "node_ID" = c("Node ID", "nodeID", "ID", "NodeID")
+    
   )
   
   for(n in names(names_dict)){
@@ -164,6 +187,22 @@ normalise_names <- function(d_f){
     }
   }
   return(d_f)
+}
+
+import_analysis_results <- function(filename){
+  
+  imported_data <- readr::read_csv(file.path("analysis_results", filename)) %>% 
+    normalise_names()
+  
+  print(names(imported_data))
+  
+  
+  if(filename == "bats_node_metrics.csv"){
+    names(imported_data)[length(names(imported_data))] <- "exp_treatment"
+    # imported_data <- mutate(betweenness = betweenness_centrality) %>% select(-betweenness_centrality)
+  }
+  # print(names(imported_data))
+  return(imported_data %>% mutate_all(as.character))
 }
 
 final_df <- run_full_analysis()

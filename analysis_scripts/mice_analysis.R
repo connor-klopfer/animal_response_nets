@@ -35,3 +35,71 @@ mice_net_analysis <- function(){
   final <- data.frame(do.call(rbind, master_list))
   return(final)
 }
+
+mice_ind_analysis <- function(){
+  #' Iterate through the list of lists in to form analysis on the mice networks. 
+  m_df <- import_mice_networks()
+  
+  master_list <- list()
+  master_idx <- 1
+  for(tr in names(m_df)){
+    if(tr != "LPS"){
+      next()
+    }
+    for(tp in names(m_df[[tr]])){
+      for(n in 1:length(m_df[[tr]][[tp]])){
+        temp_net <- m_df[[tr]][[tp]][[n]]
+        
+        # Metadata
+        temp_list <- c(
+          "network" = paste0("mouse_", tr),
+          "animal" = "mouse",
+          "condition" = tp,
+          "replicate_num" = n
+        )
+        
+        temp_df <- get_graph_ind_metrics(temp_net)
+        
+        for(name in names(temp_list)){
+          temp_df[[name]] <- temp_list[[name]]
+        }
+        
+        temp_list <- temp_df
+        master_list[[master_idx]] <- temp_list
+        master_idx <- master_idx + 1
+      }
+    }
+  }
+  # Append to dataframe. 
+  final <- data.frame(do.call(rbind, master_list))
+  return(final)
+}
+
+mice_pop_analysis <- function(){
+  #' Iterate through the list of lists in to form analysis on the mice networks. 
+  m_df <- import_mice_networks()
+  
+  master_list <- list()
+  master_idx <- 1
+  for(tr in names(m_df)){
+    for(tp in names(m_df[[tr]])){
+      for(n in 1:length(m_df[[tr]][[tp]])){
+        temp_net <- m_df[[tr]][[tp]][[n]]
+        
+        # Metadata
+        temp_list <- c(
+          "network" = paste0("mouse_", tr),
+          "animal" = "mouse",
+          "condition" = tp,
+          "replicate_num" = n
+        )
+        temp_list <- get_graph_pop_metrics(temp_net, temp_list)
+        master_list[[master_idx]] <- temp_list
+        master_idx <- master_idx + 1
+      }
+    }
+  }
+  # Append to dataframe. 
+  final <- data.frame(do.call(rbind, master_list))
+  return(final)
+}
