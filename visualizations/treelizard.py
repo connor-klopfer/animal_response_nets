@@ -4,9 +4,12 @@ import numpy as np
 from matplotlib import pyplot
 import os
 
-PREFIX = '../analysis_results/'
+#from vis_params import rcParams
+import vis_params
 
-df = pandas.read_csv(PREFIX + 'edgelist_treelizards_0weightexcl.csv')
+#PREFIX = '../analysis_results/'
+
+df = pandas.read_csv(vis_params.ANALYSIS_FOLDER + 'edgelist_treelizards_0weightexcl.csv')
 
 #df = df[['trt', 'id1', 'id2', 'distance', 'weight']]
 
@@ -21,5 +24,18 @@ G = networkx.DiGraph()
 G.add_weighted_edges_from(elist2)
 #G = networkx.from_edgelist(elist2)
 
-fig,ax = pyplot.subplots(1,1)
-networkx.draw_networkx(G)
+fig,ax = pyplot.subplots(1,1, constrained_layout=True)
+
+pos_xy = networkx.spring_layout(G)
+networkx.draw_networkx(G,
+#        arrowsize=eweights,
+        pos = pos_xy,
+        font_color=[1,1,1],
+        font_size=8,
+        edge_color=[0,0,0,0.4],
+        node_shape='s',
+        node_size=400
+)
+
+fig.savefig(vis_params.IMAGES_FOLDER + 'treelizard.png')
+fig.show()
