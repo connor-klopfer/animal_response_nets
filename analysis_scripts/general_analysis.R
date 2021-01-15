@@ -76,8 +76,15 @@ get_graph_pop_metrics <- function(g, results_list){
 
 get_normalised_betweenness <- function(g, is_directed){
   all_betweenness <- igraph::betweenness(g, directed = is_directed)
-  normalised_betweenness <- (all_betweenness - min(all_betweenness)) / 
-                               (max(all_betweenness) - min(all_betweenness))
+  if(max(all_betweenness) == 0){
+    normalised_betweenness <- (all_betweenness - min(all_betweenness)) / 
+      (1)
+  }else{
+    normalised_betweenness <- (all_betweenness - min(all_betweenness)) / 
+                                 (max(all_betweenness) - min(all_betweenness))
+    
+  }
+  # normalised_betweenness <- all_betweenness
   return(normalised_betweenness)
 }
 
