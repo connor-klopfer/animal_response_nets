@@ -3,17 +3,15 @@
 
 
 append_beetle_population_analysis <- function(){
-  beetles <- readr::read_csv(file.path("analysis_results", "mean_measures_beetles.csv"))
-  names(beetles) <- c("replicate_num", "condition", "n_nodes", "eigenvector_centrality", 
-                      "betweenness_centrality")
+  beetles <- readr::read_csv(file.path("analysis_results", "Population_metrics_beetle.csv"))
+  names(beetles) <- c("replicate_num", "condition", "n_nodes", "density")
   beetles$network <- "beetle"
   beetles$animal <- "beetle"
-  beetles$effective_information <- NA
   
   beetle_edges <- readr::read_csv(file.path("data", 
-                                            "Beetles_FormicaEtAl2017","SRI_edgelist_no_control.csv")) %>% select(-X1)
-  # View(beetle_edges)
-  
+                                            "Beetles_FormicaEtAl2017","SRI_edgelist_no_control.csv")) %>% 
+    select(-X1)
+
   beetle_nets <- list()
   for(treatment in unique(beetle_edges$Group.ID.Populations)){
     beetle_nets[[treatment]] <- list()
@@ -25,9 +23,7 @@ append_beetle_population_analysis <- function(){
     }
   }
   
-  
-  # beetle_nets <- get_beetle_nets()
-  # View(beetle_nets)
+  beetles$effective_information <- NA
   for(c in unique(beetles$replicate_num)){
     if(c %in% c("C1", "C2", "C3", "C4")){
       next()
@@ -40,17 +36,21 @@ append_beetle_population_analysis <- function(){
   }
   return(beetles %>% 
            mutate(condition = as.character(condition), 
-                  n_nodes = as.character(n_nodes)))
+                  n_nodes = as.character(n_nodes), 
+                  animal = "beetle", 
+                  network = "beetle") %>% 
+           filter(!(replicate_num %in% c("C1", "C2", "C3", "C4"))))
 }
+
+append_beetle_population_analysis()
 
 
 append_beetle_ind_analysis <- function(){
-  beetle <- readr::read_csv(file.path("analysis_results", "centrality_measures_beetles.csv")) %>% 
-    select(-CLOSENESS_CENTRALITY)
+  beetle <- readr::read_csv(file.path("analysis_results", "Individual_metrics_beetles.csv")) %>% 
+    select(-CLOSENESS_CENTRALITY, -DEGREE_NORMALIZED)
   names(beetle) <- c("replicate_num", "condition", "node_ID", 'degree', "eigenvector_centrality", "betweeness")
-  return(beetle %>% 
-           mutate(condition = as.character(condition), 
-                  n_nodes = as.character(n_nodes)))
+  return(beetle %>% mutate(network = "beetle", animal = "beetle") %>% 
+           filter(!(replicate_num %in% c("C1", "C2", "C3", "C4"))))
   }
 
 
@@ -78,7 +78,7 @@ get_beetle_nets <- function(){
   return(all_beetles)
 }
 
-beetle_sample <- read_in_beetle_graphs()
+# beetle_sample <- read_in_beetle_graphs()
 
 
-append_beetle_analysis()
+# append_beetle_analysis()
