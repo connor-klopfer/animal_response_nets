@@ -1,0 +1,113 @@
+---
+title: "metagear"
+author: "Annemarie van der Marel"
+date: "18/04/2021"
+output: html_document
+---
+
+metagear package allows to
+- Initialize a dataframe containing bibliographic data (tile, abstract, journal) from multiple study references.
+- Distribute these references randomly to two team members.
+- Merge and summarize the screening efforts of this team.
+
+http://lajeunesse.myweb.usf.edu/metagear/metagear_basic_vignette.html
+https://cran.r-project.org/web/packages/metagear/metagear.pdf
+
+```{r setup, include=FALSE}
+# first load Bioconductor resources needed to install the EBImage package 
+# and accept/download all of its dependencies
+#install.packages("BiocManager"); 
+#BiocManager::install("EBImage")
+#install.packages("metagear")
+
+# then load metagear
+library(metagear)
+library(dplyr)
+```
+
+## distribute references
+
+
+```{r load bib dataset}
+
+# load a bibliographic dataset with the authors, titles, and abstracts of multiple study references 
+refs <- read.csv("savedrecsWOS_2021-04-18.csv")
+# display the bibliographic variables in this dataset
+names(refs)
+
+# change naming now or later
+refs_selectVar <- refs %>% 
+  dplyr::select(Authors, Publication.Year, Article.Title, Volume, Start.Page, End.Page, DOI, Abstract) 
+example.names.metagear <-    c("AUTHORS"  "YEAR"     "TITLE"    "JOURNAL"  "VOLUME"   "LPAGES"   "UPAGES"   "DOI"      "ABSTRACT")
+
+# prime the study-reference dataset
+theRefs <- effort_initialize(refs) # adds 3 columns: unique key per ref, empty reviewer column, and a screening effort column 'include'
+# display the new columns added by effort_initialize 
+names(theRefs)
+
+
+
+# randomly distribute screening effort to a team
+theTeam <- c("Alex", "Alexis", "Annemarie","Catherine", "Connor", "Lauren", "Lisa", "Manuch", "Marya")
+# randomly distribute screening effort to a team,
+# but also saving these screening tasks to separate files for each team member
+theRefs_unscreened <- effort_distribute(theRefs, reviewers = theTeam,  save_split = TRUE) # add effort (e.g. = c(20, 80))) to delegate screening effort unevenly
+theRefs_unscreened[c("STUDY_ID", "REVIEWERS")] # display screening tasks
+
+list.files(pattern = "effort")
+
+
+```
+
+## Screening abstracts of references 
+
+Screening interface
+no: to exclude study
+maybe: more information is needed to determine inclusion
+yes; include study
+
+```{r screening abstracts}
+# initialize screener GUI
+abstract_screener("effort_Annemarie.csv", 
+                  aReviewer = "Annemarie",
+                  titleColumnName = "Article.Title",
+                  abstractColumnName = "Abstract")
+
+
+```
+## Merge screening efforts
+
+```{r merge screening effort}
+# WARNING: will merge all files named "effort_*" in directory
+theRefs_screened <- effort_merge()
+theRefs_screened[c("STUDY_ID", "REVIEWERS", "INCLUDE")]
+theSummary <- effort_summary(theRefs_screened)
+```
+
+
+
+## Generating PRISMA plots
+
+```{r Generating PRISMA plot}
+
+phases <- c("START_PHASE: # of studies identified through database searching",
+            "START_PHASE: # of additional studies identified through other sources",
+            "# of studies after duplicates removed",
+            "# of studies with title and abstract screened",
+            "EXCLUDE_PHASE: # of studies excluded",
+            "# of full-text articles assessed for eligibility",
+            "EXCLUDE_PHASE: # of full-text articles excluded, not fitting eligibility criteria",
+            "# of studies included in qualitative synthesis",
+            "EXCLUDE_PHASE: # studies excluded, incomplete data reported",
+            "final # of studies included in quantitative synthesis (meta-analysis)")
+
+thePlot <- plot_PRISMA(phases)
+# PRISMA plot with custom layout
+thePlot <- plot_PRISMA(phases, design = c(E = "lightcoral", flatArrow = TRUE))
+```
+
+
+
+
+
+
